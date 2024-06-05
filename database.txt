@@ -1,0 +1,57 @@
+mkdir /tmp/datadir
+docker run --name mymysql -v /tmp/datadir:/var/lib/mysql -p 6033:3306 \
+ -e MYSQL_ROOT_PASSWORD=my-secret-pw -d mysql:debian
+docker exec -it mymysql bash
+
+mysql -uroot -pmy-secret-pw
+CREATE USER 'streamuser'@'%' IDENTIFIED BY 'stream';
+CREATE DATABASE IF NOT EXISTS streamdb CHARACTER SET utf8;
+GRANT ALL ON streamdb.* TO 'streamuser'@'%';
+exit;
+#log in
+mysql -u streamuser -p streamdb
+stream
+
+create table etl_sink ( id int primary key,
+ title varchar(512), rating_count int,
+ rating_sum int);
+
+create table anomaly_sink ( id int primary key,
+ title varchar(512), rating_count int,
+ rating_avg double, start_time varchar(100), end_time varchar(100));
+# dodaj rok i miesiac
+# konwertujemy na inta na razie. Zobaczymy czy styknie
+
+--property parse.key=true --property key.separator=";"
+
+ID;{ "schema": { "type": "struct", "optional": false, "version": 1, "fields": [ {"field": "title", "type": "string", "optional": true }, { "field": "rating_count", "type":"int32", "optional": true }, { "field": "rating_sum", "type": "int32", "optional": true } ] }, "payload": { "title":"<TITLE>", "rating_count": <RATING_COUNT>, "rating_sum": <rating_SUM> } }
+
+ID;{ "schema": { "type": "struct", "optional": false, "version": 1, "fields": [ {"field": "title", "type": "string", "optional": true }, { "field": "rating_count", "type":"int32", "optional": true }, { "field": "rating_avg", "type": "double", "optional": true } ] }, "payload": { "title":"<TITLE>", "rating_count": <RATING_COUNT>, "rating_avg": <rating_AVG> } }
+"1;{ \"schema\": { \"type\": \"struct\", \"optional\": false, \"version\": 1, \"fields\": [ {\"field\": \"title\", \"type\": \"string\", \"optional\": true }, { \"field\": \"rating_count\", \"type\":\"int32\", \"optional\": true }, { \"field\": \"rating_sum\", \"type\": \"int32\", \"optional\": true } ] }, \"payload\": { \"title\":\"asd\", \"rating_count\": 5, \"rating_sum\": 25 } }",
+CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)
+
+kafka-topics.sh --bootstrap-server ${CLUSTER_NAME}-w-0:9092 --delete \
+ --topic etl-out
+kafka-topics.sh --bootstrap-server ${CLUSTER_NAME}-w-0:9092 --create \
+ --replication-factor 2 --partitions 3 --topic etl-out
+
+
+# inny
+wget https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/\
+8.0.33/mysql-connector-j-8.0.33.jar
+sudo cp mysql-connector-j-8.0.33.jar /usr/lib/kafka/libs
+wget https://packages.confluent.io/maven/io/confluent/kafka-connect-jdbc/\
+10.7.0/kafka-connect-jdbc-10.7.0.jar
+sudo mkdir /usr/lib/kafka/plugin
+sudo cp kafka-connect-jdbc-10.7.0.jar /usr/lib/kafka/plugin
+
+sudo cp /usr/lib/kafka/config/tools-log4j.properties \
+ /usr/lib/kafka/config/connect-log4j.properties
+echo "log4j.logger.org.reflections=ERROR" | \
+ sudo tee -a /usr/lib/kafka/config/connect-log4j.properties
+
+/usr/lib/kafka/bin/connect-standalone.sh connect-standalone.properties \
+ connect-jdbc-sink.properties
+
+/usr/lib/kafka/bin/connect-standalone.sh connect-standalone.properties \
+ connect-jdbc-sink-anomaly.properties
