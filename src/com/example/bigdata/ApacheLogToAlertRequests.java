@@ -123,6 +123,7 @@ public class ApacheLogToAlertRequests {
                 System.out.println("NULL IN MAPPING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                 return KeyValue.pair(k, "NULL!!!!!!!!!");
             } else {
+                System.out.println("ANOMALY FOUND. CHECK DATABASE!");
                 return KeyValue.pair(k.key(), String.format("{ \"schema\": { \"type\": \"struct\", \"optional\": false, \"version\": 1, \"fields\": [ {\"field\": \"title\", \"type\": \"string\", \"optional\": true }, { \"field\": \"rating_count\", \"type\":\"int32\", \"optional\": true }, { \"field\": \"rating_avg\", \"type\": \"double\", \"optional\": true }, { \"field\": \"start_time\", \"type\": \"double\", \"optional\": true }, { \"field\": \"end_time\", \"type\": \"double\", \"optional\": true } ] }, \"payload\": { \"title\":\"%s\", \"rating_count\": %s, \"rating_avg\": %s, \"start_time\": \"%s\", \"end_time\": \"%s\" } }"
                         , cleanString(v.title), v.ratingCount, v.average, String.valueOf(k.window().start()), String.valueOf(k.window().start())));
             }

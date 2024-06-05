@@ -37,6 +37,7 @@ docker run --name mymysql -v /tmp/datadir:/var/lib/mysql -p 6033:3306 \
  -e MYSQL_ROOT_PASSWORD=my-secret-pw -d mysql:debian
 ```
 `docker exec -it mymysql bash`
+
 `mysql -uroot -pmy-secret-pw`
 ```
 CREATE USER 'streamuser'@'%' IDENTIFIED BY 'stream';
@@ -46,6 +47,7 @@ exit;
 ```
 Zaloguje się:
 `mysql -u streamuser -p streamdb`
+
 `stream` - hasło
 
 ```
@@ -58,20 +60,27 @@ create table anomaly_sink ( id int primary key,
  title varchar(512), rating_count int,
  rating_avg double, start_time varchar(100), end_time varchar(100));
  ```
-
+By odczytać etl: `select * from etl_sink;`
+By odczytać anomalie: `select * from anomaly_sink;`
 ## Terminal 4
 connect-standalone
 `CLUSTER_NAME=$(/usr/share/google/get_metadata_value attributes/dataproc-cluster-name)`
+
 `wget https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/\
 8.0.33/mysql-connector-j-8.0.33.jar`
+
 `sudo cp mysql-connector-j-8.0.33.jar /usr/lib/kafka/libs`
+
 `wget https://packages.confluent.io/maven/io/confluent/kafka-connect-jdbc/\
 10.7.0/kafka-connect-jdbc-10.7.0.jar`
+
 `sudo mkdir /usr/lib/kafka/plugin`
+
 `sudo cp kafka-connect-jdbc-10.7.0.jar /usr/lib/kafka/plugin`
 
 `sudo cp /usr/lib/kafka/config/tools-log4j.properties \
 /usr/lib/kafka/config/connect-log4j.properties`
+
 `echo "log4j.logger.org.reflections=ERROR" | \
 sudo tee -a /usr/lib/kafka/config/connect-log4j.properties`
 
